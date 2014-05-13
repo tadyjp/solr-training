@@ -25,13 +25,24 @@ class Restaurant < ActiveRecord::Base
       end
     end
 
+    # Solr検索
+    def search(query, options)
+      json = HTTPClient.new.get_content('http://localhost:8983/solr/gourmet/select', {
+        q: query,
+        wt: 'json'
+      })
+      data = JSON.parse(json)
+      ids = data['response']['docs'].map { |d| d['id'] }
+      find(ids)
+    end
+
     private
 
     # SolrへPOSTするリクエスト
     def post_to_solr(content)
-      http_client = HTTPClient.new
-      endpoint_uri = 'http://localhost:8983/solr/gourmet/update/json?commit=true'
-      http_client.post_content(endpoint_uri, content.to_json, 'Content-Type' => 'application/json')
+      HTTPClient.new.post_content('http://localhost:8983/solr/gourmet/update/json?commit=true',
+                                  content.to_json,
+                                  'Content-Type' => 'application/json')
     end
   end
 

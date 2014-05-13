@@ -30,3 +30,5 @@ gem 'spring',      group: :development
 # gem 'debugger', group: [:development, :test]
 
 gem 'httpclient'
+
+gem 'kaminari', github: 'amatsuda/kaminari'
