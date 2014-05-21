@@ -1,5 +1,6 @@
 require 'net/http'
 require 'uri'
+require 'pp'
 
 class Restaurant < ActiveRecord::Base
   belongs_to :area
@@ -10,14 +11,15 @@ class Restaurant < ActiveRecord::Base
 
     # レストランデータをSolrへPOSTしindexさせる
     def index_documents
-      find_in_batches(batch_size: 100) do |restaurants|
+      find_in_batches(batch_size: 1000) do |restaurants|
         hash = restaurants.map do |restaurant|
           {
             id: restaurant.id,
             name: restaurant.name,
             property: restaurant.property,
             alphabet: restaurant.alphabet,
-            description: restaurant.description
+            description: restaurant.description,
+            pref: restaurant.pref.try(:name)
           }
         end
 
@@ -26,14 +28,28 @@ class Restaurant < ActiveRecord::Base
     end
 
     # Solr検索
+    # @return [Hash] {restaurants: <Restaurantオブジェクトのリスト>, pref_facets: <ファセット検索結果>}
+    #   :pref_facets=>{"東京都"=>994, "北海道"=>267,  ...}
     def search(query, options)
       json = HTTPClient.new.get_content('http://localhost:8983/solr/gourmet/select', {
         q: query,
-        wt: 'json'
+        wt: 'json',
+        'facet' => 'true',
+        'facet.field' => 'pref',
       })
       data = JSON.parse(json)
       ids = data['response']['docs'].map { |d| d['id'] }
-      find(ids)
+
+      {
+        restaurants: find(ids),
+
+        # :pref_facets=>{"東京都"=>994, "北海道"=>267,  ...}
+        pref_facets: Hash.new.tap { |hash|
+          data['facet_counts']['facet_fields']['pref'].in_groups_of(2) { |group|
+            hash[group[0]] = group[1]
+          }
+        }
+      }
     end
 
     private

@@ -37,7 +37,14 @@
 
   </div>
   <div class="col-xs-4">
-
+    <div class="list-group">
+      <% @pref_facets.each do |pref, count| %>
+        <a href="#" class="list-group-item">
+          <%= pref %>
+          <span class="badge"><%= count %></span>
+        </a>
+      <% end %>
+    </div>
   </div>
 </div>
 

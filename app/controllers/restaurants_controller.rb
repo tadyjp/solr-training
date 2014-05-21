@@ -2,7 +2,10 @@ class RestaurantsController < ApplicationController
 
   # 検索ページ
   def search
-    @restaurants = Restaurant.search(params[:q], limit: 20)
+    Restaurant.search(params[:q], limit: 20).tap do |response|
+      @restaurants = response[:restaurants]
+      @pref_facets = response[:pref_facets]
+    end
   end
 
   # 詳細ページ
